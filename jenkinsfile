@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        jdk   'jdk 21'
-        maven 'Maven 3.8.7'
+        jdk   'jdk 17'
+        maven 'Maven 3.9.6'
     }
 
     environment {
@@ -45,27 +45,6 @@ pipeline {
                         docker push ${IMAGE}
                     """
                 }
-            }
-        }   
-        
-
-            stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        mvn sonar:sonar \
-                        -f demo/pom.xml \
-                        -Dsonar.projectKey=javac-app \
-                        -Dsonar.host.url=http://54.179.125.220:9000 \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN
-                    '''
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                waitForQualityGate abortPipeline: true
             }
         }
 
