@@ -50,8 +50,11 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     // Fixed: sonar properties already in pom.xml, no need for -Dsonar.login
-                    sh 'mvn clean verify -B -f demo/pom.xml'
-                    sh 'mvn sonar:sonar -f demo/pom.xml'
+                     sh '''
+                mvn clean verify sonar:sonar \
+                -B \
+                -f demo/pom.xml
+            '''
                 }
             }
         }
