@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk   'jdk 21'
+        maven 'Maven 3.8.7'
+    }
+
+    environment {
+        IMAGE = "neeraj91/${JOB_NAME}:v1.${BUILD_ID}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean verify -B'
+                
+            }
+        }
+
+        // Merged: Docker build + tag into one stage
+        stage('Docker Build & Tag') {
+            steps {
+                sh "docker build -t ${IMAGE} ."
+            }
+        }
+
+        // Merged: Docker login + push using credentials (no hardcoded password)
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push ${IMAGE}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+             sh """
+                    docker stop ${JOB_NAME} || true
+                    docker rm   ${JOB_NAME} || true
+                    docker run -d --name ${JOB_NAME} -p 8080:8080 ${IMAGE}
+                """ 
+            }
+        }
+    }
+
+    post {
+
+         always 
+     {
+            cleanWs()
+        }
+    }
+}
