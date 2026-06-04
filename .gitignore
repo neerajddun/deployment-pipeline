@@ -1,0 +1,7 @@
+*.pem
+*.png
+*.pdf
+*.docx
+*.txt
+target/
+.terraform/
