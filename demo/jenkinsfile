@@ -20,19 +20,17 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh 'mvn clean verify -B'
-                
+                // Fixed: point to demo/pom.xml
+                sh 'mvn clean verify -B -f demo/pom.xml'
             }
         }
 
-        // Merged: Docker build + tag into one stage
         stage('Docker Build & Tag') {
             steps {
                 sh "docker build -t ${IMAGE} ."
             }
         }
 
-        // Merged: Docker login + push using credentials (no hardcoded password)
         stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(
@@ -41,50 +39,50 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
                         docker push ${IMAGE}
                     """
                 }
             }
-        }   
-        
+        }
 
-            stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        mvn sonar:sonar \
-                        -f demo/pom.xml \
-                        -Dsonar.projectKey=javac-app \
-                        -Dsonar.host.url=http://54.179.125.220:9000 \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN
-                    '''
+                    // Fixed: sonar properties already in pom.xml, no need for -Dsonar.login
+                    sh 'mvn sonar:sonar -f demo/pom.xml'
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                waitForQualityGate abortPipeline: true
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-             sh """
+                sh """
                     docker stop ${JOB_NAME} || true
                     docker rm   ${JOB_NAME} || true
                     docker run -d --name ${JOB_NAME} -p 8080:8080 ${IMAGE}
-                """ 
+                """
             }
         }
     }
 
     post {
-
-         always 
-     {
+        always {
             cleanWs()
+        }
+        success {
+            echo "✅ Pipeline completed successfully! Image: ${IMAGE}"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs above."
         }
     }
 }
