@@ -18,10 +18,24 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        // Combined: Build + Test + Coverage + Sonar in ONE mvn command
+        stage('Build, Test & SonarQube Analysis') {
             steps {
-                // Fixed: point to demo/pom.xml
-                sh 'mvn clean verify -B -f demo/pom.xml'
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        mvn clean verify sonar:sonar \
+                        -B \
+                        -f demo/pom.xml
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
@@ -46,27 +60,6 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    // Fixed: sonar properties already in pom.xml, no need for -Dsonar.login
-                     sh '''
-                mvn clean verify sonar:sonar \
-                -B \
-                -f demo/pom.xml
-            '''
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
         stage('Deploy') {
             steps {
                 sh """
@@ -79,14 +72,8 @@ pipeline {
     }
 
     post {
-        always {
-            cleanWs()
-        }
-        success {
-            echo "✅ Pipeline completed successfully! Image: ${IMAGE}"
-        }
-        failure {
-            echo "❌ Pipeline failed. Check logs above."
-        }
+        always { cleanWs() }
+        success { echo "✅ Pipeline completed! Image: ${IMAGE}" }
+        failure { echo "❌ Pipeline failed. Check logs above." }
     }
 }
