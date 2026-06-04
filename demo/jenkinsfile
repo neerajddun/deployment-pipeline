@@ -68,7 +68,7 @@ pipeline {
                 sh """
                     docker stop ${JOB_NAME} || true
                     docker rm   ${JOB_NAME} || true
-                    docker run -d --name ${JOB_NAME} -p 8080:8080 ${IMAGE}
+                    docker run -d --name ${JOB_NAME} -p 9090:8080 ${IMAGE}
                 """
             }
         }
