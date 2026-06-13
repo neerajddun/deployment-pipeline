@@ -51,7 +51,6 @@ pipeline {
              kubectl apply -f deployment.yaml
              kubectl apply -f service.yaml
              kubectl set image deployment/java-app java-app=${IMAGE}
-             kubectl rollout status deployment/java-app --timeout=60s
              """
             }
         }
