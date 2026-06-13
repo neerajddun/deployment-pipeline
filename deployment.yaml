@@ -14,6 +14,8 @@ spec:
       containers:
         - name: java-app
           image: neeraj91/java-app:latest
+          ports:
+            - containerPort: 9090
           resources:
             requests:
               memory: "256Mi"
