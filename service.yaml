@@ -1,7 +1,7 @@
 apiVerion: v1
 kind: Service
 metadata:
-  name: java-app
+  name: java-app-svc
 spec:
   type: NodePort
   selector:
