@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: java-app
-          image: neeraj91/java-app
+          image: neeraj91/java-app:latest
           resources:
             limits:
               memory: "128Mi"
